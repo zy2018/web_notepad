@@ -1,0 +1,96 @@
+<?php
+
+// Base URL of the website, without trailing slash.
+$base_url = '//'.$_SERVER['HTTP_HOST'];
+
+// Directory to save user documents.
+$data_directory = '_tmp';
+
+/**
+ * Sanitizes a string to include only alphanumeric characters.
+ *
+ * @param  string $string the string to sanitize
+ * @return string         the sanitized string
+ */
+function sanitizeString($string) {
+    return preg_replace('/[^a-zA-Z0-9]+/', '', $string);
+}
+
+/**
+ * Generates a random string.
+ *
+ * @param  integer $length the length of the string
+ * @return string          the new string
+ *
+ * Initially based on http://stackoverflow.com/a/4356295/1391963
+ */
+function generateRandomString($length = 5) {
+    // Do not generate ambiguous characters. See http://ux.stackexchange.com/a/53345/25513
+    $characters = '23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ';
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, strlen($characters) - 1)];
+    }
+    return $randomString;
+}
+
+
+// Disable caching.
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
+if (empty($_GET['f']) || sanitizeString($_GET['f']) !== $_GET['f']) {
+
+    // User has not specified a valid name, generate one.
+    header('Location: ' . $base_url . '/' . generateRandomString());
+    die();
+}
+
+$name = sanitizeString($_GET['f']);
+$path = $data_directory . DIRECTORY_SEPARATOR . $name;
+
+if (isset($_POST['data'])) {
+    $data=$_POST['data'];
+    if (isset($_SERVER['HTTP_CONTENT_ENCODING'])){
+       $data=base64_decode($data);
+        $data = gzdecode($data);
+    }
+    
+    // Update file.
+    file_put_contents($path, $data);
+    die();
+}
+
+if (strpos($_SERVER['HTTP_USER_AGENT'], 'curl') === 0) {
+
+    // Output raw file if client is curl.
+    print file_get_contents($path);
+    die();
+}
+?><!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content="Web_Notepad (https://github.com/zy2018/web_notepad)" />
+    <title><?php print $name; ?></title>
+    <link rel="shortcut icon" href="<?php print $base_url; ?>/favicon.ico" />
+    <link href="<?php print $base_url; ?>/styles.css" rel="stylesheet" />
+</head>
+<body>
+    <div style="margin:5px 20px 5px 30px">
+        <image id="saved" src=saved.png style="display:none;">
+    </div>
+    <div class="container">
+        <textarea id="content"><?php
+                if (file_exists($path)) {
+                    print htmlspecialchars(file_get_contents($path), ENT_QUOTES, 'UTF-8');
+                }
+         ?></textarea>
+    <pre id="printable"></pre>
+    </div>
+    <script src="<?php print $base_url; ?>/pako_deflate.min.js"></script>
+    <script src="<?php print $base_url; ?>/script.js"></script>
+</body>
+</html>
