@@ -5,7 +5,8 @@ function uploadContent() {
     if (content !== textarea.value) {
         document.getElementById('saved').style.display='none';
         // Text area value has changed.
-        var data = textarea.value;
+        var temp = textarea.value;
+        var data = temp;
         var request = new XMLHttpRequest();
         request.open('POST', window.location.href, true);
         if(data.length > 50){
@@ -20,7 +21,7 @@ function uploadContent() {
             if (request.readyState === 4) {
 
                 // Request has ended, check again after 1 second.
-                content = data;
+                content = temp;
                 setTimeout(uploadContent, 1000);
             }
 
